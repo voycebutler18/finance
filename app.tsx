@@ -1,5 +1,5 @@
 // finance/App.tsx
-import { Suspense, lazy } from "react";
+import React, { Suspense, lazy, type ReactElement } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,13 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
-// Dash components
-import EmailVerificationRequired from "@/components/Auth/EmailVerificationRequired";
-import OnboardingFlow from "@/components/Dashboard/OnboardingFlow";
-import FinancialDashboard from "@/components/Dashboard/FinancialDashboard";
-import AdminDashboard from "@/components/Dashboard/AdminDashboard";
-
-// Lazy-loaded pages
+// ---- Lazy-loaded marketing pages ----
 const Home = lazy(() => import("@/pages/Home"));
 const Services = lazy(() => import("@/pages/Services"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
@@ -25,12 +19,16 @@ const Terms = lazy(() => import("@/pages/legal/Terms"));
 const Privacy = lazy(() => import("@/pages/legal/Privacy"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
-// Auth WRAPPERS (use these instead of raw form components)
+// ---- Auth WRAPPERS (pages, not raw form components) ----
 const LoginPage = lazy(() => import("@/pages/auth/Login"));
 const SignupPage = lazy(() => import("@/pages/auth/Signup"));
 
-// Optional alias for /dashboard
-const ClientDashboard = FinancialDashboard;
+// ---- Dashboard WRAPPERS (pages) ----
+const DashboardIndex = lazy(() => import("@/pages/dashboard/Index"));       // /dashboard
+const FinancePage = lazy(() => import("@/pages/dashboard/Finance"));        // /dashboard/finance
+const AdminPage = lazy(() => import("@/pages/dashboard/Admin"));            // /dashboard/admin
+const OnboardingPage = lazy(() => import("@/pages/dashboard/Onboarding"));  // /onboarding
+const VerifyEmailPage = lazy(() => import("@/pages/dashboard/VerifyEmail")); // /verify-email
 
 function Spinner() {
   return (
@@ -47,7 +45,7 @@ function ProtectedRoute({
   redirectTo = "/login",
   requireVerified = true,
 }: {
-  children: JSX.Element;
+  children: ReactElement;
   redirectTo?: string;
   requireVerified?: boolean;
 }) {
@@ -56,6 +54,7 @@ function ProtectedRoute({
   if (loading) return <Spinner />;
   if (!user) return <Navigate to={redirectTo} replace />;
 
+  // Supabase v2: email_confirmed_at is present once verified
   const isVerified =
     (user as any)?.email_confirmed_at || (user as any)?.confirmed_at;
 
@@ -69,7 +68,7 @@ function RoleRoute({
   children,
   allow,
 }: {
-  children: JSX.Element;
+  children: ReactElement;
   allow: Role[];
 }) {
   const { user } = useAuth();
@@ -97,14 +96,14 @@ export default function App() {
               {/* Auth (wrappers) */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
-              <Route path="/verify-email" element={<EmailVerificationRequired />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
 
               {/* Onboarding (after signup) */}
               <Route
                 path="/onboarding"
                 element={
                   <ProtectedRoute>
-                    <OnboardingFlow />
+                    <OnboardingPage />
                   </ProtectedRoute>
                 }
               />
@@ -114,7 +113,7 @@ export default function App() {
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <ClientDashboard />
+                    <DashboardIndex />
                   </ProtectedRoute>
                 }
               />
@@ -124,7 +123,7 @@ export default function App() {
                 path="/dashboard/finance"
                 element={
                   <ProtectedRoute>
-                    <FinancialDashboard />
+                    <FinancePage />
                   </ProtectedRoute>
                 }
               />
@@ -135,7 +134,7 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <RoleRoute allow={["admin", "accountant", "owner"]}>
-                      <AdminDashboard />
+                      <AdminPage />
                     </RoleRoute>
                   </ProtectedRoute>
                 }
