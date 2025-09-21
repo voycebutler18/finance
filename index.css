@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* optional theme tokens */
+:root {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+}
