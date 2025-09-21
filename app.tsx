@@ -1,38 +1,37 @@
-// src/App.tsx
+// finance/App.tsx
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { useAuth } from "@/contexts/AuthContext";
 
-// ——— Layout bits (swap to your real components) ———
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+// Layout
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
-// ——— Auth / Dash components you already have ———
-import LoginForm from "@/components/Auth/LoginForm";
+// Dash components
 import EmailVerificationRequired from "@/components/Auth/EmailVerificationRequired";
 import OnboardingFlow from "@/components/Dashboard/OnboardingFlow";
 import FinancialDashboard from "@/components/Dashboard/FinancialDashboard";
 import AdminDashboard from "@/components/Dashboard/AdminDashboard";
 
-// ——— Lazy-loaded marketing pages ———
-const Home = lazy(() => import("@/pages/Home"));                // hero, services highlights, CTA → /signup
-const Services = lazy(() => import("@/pages/Services"));        // web + ads + bookkeeping + reporting
-const Pricing = lazy(() => import("@/pages/Pricing"));          // Starter $1,500/mo, Growth $3,000+/mo
-const Packages = lazy(() => import("@/pages/Packages"));        // Detailed inclusions & add-ons
+// Lazy-loaded pages
+const Home = lazy(() => import("@/pages/Home"));
+const Services = lazy(() => import("@/pages/Services"));
+const Pricing = lazy(() => import("@/pages/Pricing"));
+const Packages = lazy(() => import("@/pages/Packages"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const Blog = lazy(() => import("@/pages/Blog"));
 const Terms = lazy(() => import("@/pages/legal/Terms"));
 const Privacy = lazy(() => import("@/pages/legal/Privacy"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
-// ——— Auth pages (create these if not present) ———
-const SignupForm = lazy(() => import("@/components/Auth/SignupForm")); // dedicated Sign Up
+// Auth WRAPPERS (use these instead of raw form components)
+const LoginPage = lazy(() => import("@/pages/auth/Login"));
+const SignupPage = lazy(() => import("@/pages/auth/Signup"));
 
-// ——— Client area shells (optional, can be inside FinancialDashboard too) ———
-const ClientDashboard = FinancialDashboard; // alias if you want a separate file later
+// Optional alias for /dashboard
+const ClientDashboard = FinancialDashboard;
 
-// ——— Helpers ———
 function Spinner() {
   return (
     <div className="min-h-[40vh] grid place-items-center text-sm text-muted-foreground">
@@ -55,17 +54,14 @@ function ProtectedRoute({
   const { user, loading } = useAuth();
 
   if (loading) return <Spinner />;
-
   if (!user) return <Navigate to={redirectTo} replace />;
 
-  // If you store email verification differently, adjust this check
   const isVerified =
     (user as any)?.email_confirmed_at || (user as any)?.confirmed_at;
 
   if (requireVerified && !isVerified) {
     return <Navigate to="/verify-email" replace />;
   }
-
   return children;
 }
 
@@ -77,23 +73,16 @@ function RoleRoute({
   allow: Role[];
 }) {
   const { user } = useAuth();
-
-  // Example: put role in user.user_metadata.role
   const role: Role | undefined = (user as any)?.user_metadata?.role;
-
-  if (!role || !allow.includes(role)) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  if (!role || !allow.includes(role)) return <Navigate to="/dashboard" replace />;
   return children;
 }
 
-// ——— App Shell ———
 export default function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen flex flex-col">
-        <Header /> {/* Make sure your “Get Started” button links to /signup */}
+        <Header /> {/* Make sure the CTA links to /signup */}
         <main className="flex-1">
           <Suspense fallback={<Spinner />}>
             <Routes>
@@ -105,13 +94,10 @@ export default function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/blog" element={<Blog />} />
 
-              {/* Auth */}
-              <Route path="/login" element={<LoginForm />} />
-              <Route path="/signup" element={<SignupForm />} />
-              <Route
-                path="/verify-email"
-                element={<EmailVerificationRequired />}
-              />
+              {/* Auth (wrappers) */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/verify-email" element={<EmailVerificationRequired />} />
 
               {/* Onboarding (after signup) */}
               <Route
@@ -123,7 +109,7 @@ export default function App() {
                 }
               />
 
-              {/* Client Dashboard (finance + marketing reports) */}
+              {/* Client Dashboard */}
               <Route
                 path="/dashboard"
                 element={
@@ -133,7 +119,7 @@ export default function App() {
                 }
               />
 
-              {/* Finance dashboard explicit route (optional alias) */}
+              {/* Finance dashboard explicit route */}
               <Route
                 path="/dashboard/finance"
                 element={
